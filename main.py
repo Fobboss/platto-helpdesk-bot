@@ -93,7 +93,7 @@ USER_MEMORY: Dict[int, UserMemory] = {}
 
 # -------------------- Strings (EN only) --------------------
 START_TEXT = f"Hi! I'm {BOT_NAME}. Ask a question — I'll help or guide you to the next step.\nUseful commands: /help, /reset, /faq, /stats"
-HELP_TEXT = "Tell me what you need. Commands: /reset — clear context; /faq — show quick answers; /stats — session stats."
+HELP_TEXT = "I can answer quick FAQs, route billing/tech/sales, and give concise next steps. Commands: /faq, /stats, /reset."
 RESET_TEXT = "Context and counters cleared."
 FAQ_HEADER = "FAQ — quick answers:"
 STATS_FMT = "Stats: you — {user} msgs, bot — {bot} msgs."
@@ -232,15 +232,16 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + mem.as_chat()
     reply, tokens = await llm_reply(messages)
-
+    log_reply = reply
     if tags:
-        reply = f"[tags: {', '.join(tags)}]\n" + reply
+        log_reply = f"[tags: {', '.join(tags)}] " + reply
 
+    
     mem.add("assistant", reply)
     await message.reply_text(reply, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 
     st["bot"] += 1
-    await log_to_sheet(time.time(), uid, username, text, reply, tokens, 0)
+    await log_to_sheet(time.time(), uid, username, text, log_reply, tokens, 0)
 
 async def unknown_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text("Text messages only for now.")
